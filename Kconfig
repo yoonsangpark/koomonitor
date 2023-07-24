@@ -1,0 +1,4 @@
+config KOOMONITOR
+	tristate "Koomonitor  Driver"
+	help
+	  This is koomonitor Driver
