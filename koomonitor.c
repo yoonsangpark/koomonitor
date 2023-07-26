@@ -9,11 +9,67 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/platform_device.h>
+#include <linux/miscdevice.h>
+#include <linux/fs.h>
 
 #include "koomonitor.h"
 
 #define DRIVER_NAME "koomonitor"
 #define DRIVER_VERSION "0.1"
+
+
+static int koo_misc_open(struct inode *inode, struct file *file)
+{
+    pr_info("KOO misc device open\n");
+
+    return 0;
+}
+/*
+** This function will be called when we close the Misc Device file
+*/
+static int koo_misc_close(struct inode *inodep, struct file *filp)
+{
+    pr_info("KOO misc device close\n");
+
+    return 0;
+}
+/*
+** This function will be called when we write the Misc Device file
+*/
+static ssize_t koo_misc_write(struct file *file, const char __user *buf,
+               size_t len, loff_t *ppos)
+{
+    pr_info("KOO misc device write\n");
+    
+    return len; 
+}
+ 
+/*
+** This function will be called when we read the Misc Device file
+*/
+static ssize_t koo_misc_read(struct file *filp, char __user *buf,
+                    size_t count, loff_t *f_pos)
+{
+    pr_info("KOO misc device read\n");
+ 
+    return 0;
+}
+
+//File operation structure
+static const struct file_operations koo_misc_fops = {
+    .owner          = THIS_MODULE,
+    .write          = koo_misc_write,
+    .read           = koo_misc_read,
+    .open           = koo_misc_open,
+    .release        = koo_misc_close,
+};
+
+//Misc device structure
+struct miscdevice koo_misc_device = {
+    .minor = MISC_DYNAMIC_MINOR,
+    .name = "koo_misc",
+    .fops = &koo_misc_fops,
+};
 
 static int koomonitor_probe(struct platform_device *dev)
 {
@@ -75,6 +131,13 @@ static int koomintor_init(void)
 		return ret;
 	}
 
+	pr_info("misc_register init done!!!\n");
+	ret = misc_register(&koo_misc_device);
+	if (ret) {
+		pr_err("misc_register failed!!!\n");
+		return ret;
+	}
+
 	return 0;
 }
 
@@ -82,6 +145,9 @@ static void koomonitor_exit(void)
 {
 	pr_info("koomonitor exit\n");
 	platform_driver_unregister(&koomonitor_driver);
+
+	pr_info("misc_register exit done!!!\n");
+	misc_deregister(&koo_misc_device);
 }
 
 module_init(koomintor_init);
