@@ -21,8 +21,8 @@
 #define DRIVER_VERSION "0.1"
 
 
-//#define MGPIO P_GPIO(11)
-#define MGPIO	43 
+#define MGPIO P_GPIO(11)  /* 11 + 32 = 43 */
+//#define P_GPIO(pin)  (pin + 0x20)
 
 static int koo_misc_open(struct inode *inode, struct file *file)
 {
@@ -91,7 +91,7 @@ static int koomonitor_probe(struct platform_device *dev)
 	err = gpio_request(MGPIO, "gpio_test");
 
 	if (err)
-		printk(KERN_ERR "#### failed to request MGPIO\n");
+		pr_err("#### failed to request MGPIO\n");
 	
 	pr_info("koomonitor probe\n");
 	
