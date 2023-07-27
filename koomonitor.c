@@ -14,6 +14,7 @@
 
 #include <linux/gpio.h>
 #include <plat/nvt-gpio.h>
+#include <linux/interrupt.h>
 
 #include "koomonitor.h"
 
@@ -23,6 +24,14 @@
 
 #define MGPIO P_GPIO(11)  /* 11 + 32 = 43 */
 //#define P_GPIO(pin)  (pin + 0x20)
+
+
+static irqreturn_t koomonitor_irq_handler(int irq, void *dev_id) {
+
+        pr_info(">> koomonitor_irq_handler\n");
+
+        return IRQ_HANDLED;
+}
 
 static int koo_misc_open(struct inode *inode, struct file *file)
 {
@@ -56,15 +65,25 @@ static ssize_t koo_misc_write(struct file *file, const char __user *buf,
 static ssize_t koo_misc_read(struct file *filp, char __user *buf,
                     size_t count, loff_t *f_pos)
 {
-	uint32_t value = 0;
+	unsigned int irq_num;
+	
 	pr_info("KOO misc device read\n");
 
 	gpio_direction_input(MGPIO); 
-	value = gpio_get_value(MGPIO);
-	pr_info("MGPIO = %d\n", value);
 
-	value = gpio_to_irq(MGPIO);
-	pr_info("MGPIO IRQ = %d\n", value);
+        irq_num = gpio_to_irq(MGPIO);
+        pr_info("irq_num = %d\n", irq_num);
+        pr_info("MGPIO = %d\n", MGPIO);
+
+        if (request_irq(irq_num,
+                  (void *)koomonitor_irq_handler,
+                  IRQF_TRIGGER_FALLING,
+                  "koo",
+                  NULL)) {
+
+                pr_err("Cannot register interrupt number: %d\n", irq_num);
+
+        }
 
 	return 0;
 }
@@ -88,13 +107,11 @@ struct miscdevice koo_misc_device = {
 static int koomonitor_probe(struct platform_device *dev)
 {
 	int err;
+	
 	err = gpio_request(MGPIO, "gpio_test");
-
 	if (err)
 		pr_err("#### failed to request MGPIO\n");
-	
-	pr_info("koomonitor probe\n");
-	
+
 	return 0;
 }
 
